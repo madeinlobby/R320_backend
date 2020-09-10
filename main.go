@@ -1,7 +1,7 @@
 package main
 
 import (
-	"persian_meme_web_server/routing"
+	"github.com/madeinlobby/R320_backend/routing"
 )
 
 func main() {

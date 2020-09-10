@@ -1,4 +1,4 @@
-module persian_meme_web_server
+module github.com/madeinlobby/R320_backend
 
 go 1.14
 

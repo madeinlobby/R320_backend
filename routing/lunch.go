@@ -3,9 +3,9 @@ package routing
 import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/madeinlobby/R320_backend/model/database"
 	"net/http"
 	"os"
-	"persian_meme_web_server/model/database"
 	"time"
 )
 
