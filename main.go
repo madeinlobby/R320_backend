@@ -6,5 +6,8 @@ import (
 
 func main() {
 	err := routing.LunchServer()
+	if err != nil {
+		panic(err)
+	}
 
 }

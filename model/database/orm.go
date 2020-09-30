@@ -28,7 +28,3 @@ func connectToDB() error {
 	DB = db
 	return nil
 }
-
-func getMeme(id int64) *Meme {
-	return &Meme{}
-}
