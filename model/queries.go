@@ -11,9 +11,15 @@ func GetMeme(id int64) *database.Meme {
 	return result
 }
 
-func GetTopMeme(time time.Time) (*[]database.Meme, error) {
+func GetTopMeme(time *time.Time, limit int) (*[]database.Meme, error) {
 	result := &[]database.Meme{}
-	tx := database.DB.Limit(10).Where("upload_time > ?", time).Order("memes.like desc,upload_time").Find(result)
+	tx := database.DB.Limit(limit).Where("upload_time > ?", time).Order("memes.like desc,upload_time").Find(result)
+	return result, tx.Error
+}
+
+func GetEverTopMeme(limit int) (*[]database.Meme, error) {
+	result := &[]database.Meme{}
+	tx := database.DB.Limit(limit).Order("memes.like desc,upload_time").Find(result)
 	return result, tx.Error
 }
 

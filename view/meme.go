@@ -2,52 +2,109 @@ package view
 
 import (
 	"encoding/json"
+	"github.com/madeinlobby/R320_backend/configuration"
 	"github.com/madeinlobby/R320_backend/model"
+	"github.com/madeinlobby/R320_backend/model/database"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 )
 
-func TopDayMeme(responseWriter http.ResponseWriter, request *http.Request) {
-	memes, err := model.GetTopMeme(time.Now().Add(-24 * time.Hour))
-	if err != nil {
-		writeError(err, responseWriter)
-		return
+func TopDayMeme(writer http.ResponseWriter, request *http.Request) {
+	query := func() (*[]database.Meme, error) {
+		pageSize, pageNumber := getPageInfo(request)
+		t := time.Now().Add(-24 * time.Hour)
+		return model.GetTopMeme(&t, pageNumber*pageSize)
 	}
-	var result []Meme
-	for _, element := range *memes {
-		meme := Meme{
-			Title:    element.Title,
-			Id:       element.ID,
-			Tag:      nil,
-			Username: element.UploaderUsername,
-			Picture:  element.ImageAddress,
-			Like:     element.Like,
-		}
-		user, err := model.GetUser(element.UploaderUsername)
-		if err != nil {
-			writeError(err, responseWriter)
-			return
-		}
-		tags, err := model.GetTags(element.ID)
-		if err != nil {
-			writeError(err, responseWriter)
-			return
-		}
-		meme.UsernameAvatarUrl = user.Avatar
-		var stringTags []string
-		for _, tag := range *tags {
-			stringTags = append(stringTags, tag.Name)
-		}
-		meme.Tag = &stringTags
-		result = append(result[:], meme)
-	}
-	sendResponse(responseWriter, request, result)
+	TopMeme(query, writer, request)
 }
 
-func writeError(err error, w http.ResponseWriter) {
-	w.WriteHeader(http.StatusInternalServerError)
-	_, err = w.Write([]byte(err.Error()))
+func TopWeekMeme(writer http.ResponseWriter, request *http.Request) {
+	query := func() (*[]database.Meme, error) {
+		pageSize, pageNumber := getPageInfo(request)
+		t := time.Now().Add(-7 * 24 * time.Hour)
+		return model.GetTopMeme(&t, pageNumber*pageSize)
+	}
+	TopMeme(query, writer, request)
+}
+
+func TopEverMeme(writer http.ResponseWriter, request *http.Request) {
+	query := func() (*[]database.Meme, error) {
+		pageSize, pageNumber := getPageInfo(request)
+		return model.GetEverTopMeme(pageNumber * pageSize)
+	}
+	TopMeme(query, writer, request)
+}
+
+func TopMeme(query func() (*[]database.Meme, error), writer http.ResponseWriter, request *http.Request) {
+	pageSize, pageNumber := getPageInfo(request)
+	memes, err := query()
+	if err != nil {
+		writeError(err, writer)
+		return
+	}
+	serveMemes(memes, pageSize, pageNumber, writer, request)
+}
+
+func serveMemes(memes *[]database.Meme, pageSize, pageNumber int, w http.ResponseWriter, request *http.Request) {
+	var result []Meme
+	for index, element := range *memes {
+		if pageSize*(pageNumber-1) <= index && index < pageSize*pageNumber {
+			meme, err := processMeme(&element)
+			if err != nil {
+				writeError(err, w)
+				return
+			}
+			result = append(result[:], *meme)
+		}
+	}
+	sendResponse(w, request, result)
+}
+
+func getPageInfo(request *http.Request) (int, int) {
+	pn := request.URL.Query().Get("page_number")
+	ps := request.URL.Query().Get("page_size")
+	pageNumber, err := strconv.Atoi(pn)
+	if err != nil {
+		pageNumber = configuration.DefaultPageNumber
+	}
+	pageSize, err := strconv.Atoi(ps)
+	if err != nil {
+		pageSize = configuration.DefaultPageSize
+	}
+	return pageSize, pageNumber
+}
+
+func processMeme(element *database.Meme) (*Meme, error) {
+	meme := Meme{
+		Title:    element.Title,
+		Id:       element.ID,
+		Username: element.UploaderUsername,
+		Picture:  element.ImageAddress,
+		Like:     element.Like,
+	}
+	user, err := model.GetUser(element.UploaderUsername)
+	if err != nil {
+		return nil, err
+	}
+	tags, err := model.GetTags(element.ID)
+	if err != nil {
+		return nil, err
+	}
+	meme.UsernameAvatarUrl = user.Avatar
+	var stringTags []string
+	stringTags = append(stringTags)
+	for _, tag := range *tags {
+		stringTags = append(stringTags, tag.Name)
+	}
+	meme.Tag = stringTags
+	return &meme, nil
+}
+
+func writeError(err error, writer http.ResponseWriter) {
+	writer.WriteHeader(http.StatusInternalServerError)
+	_, err = writer.Write([]byte(err.Error()))
 	if err != nil {
 		log.Printf(err.Error())
 	}

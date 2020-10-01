@@ -3,6 +3,7 @@ package routing
 import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/madeinlobby/R320_backend/configuration"
 	"github.com/madeinlobby/R320_backend/model/database"
 	"github.com/madeinlobby/R320_backend/view"
 	"net/http"
@@ -14,8 +15,8 @@ import (
 var Router *mux.Router
 
 func LunchServer() error {
-	err := database.LunchDB()
-	if err != nil {
+	var err error
+	if err = database.LunchDB(); err != nil {
 		return err
 	}
 	err = configureRouter()
@@ -24,18 +25,17 @@ func LunchServer() error {
 
 func configureRouter() error {
 	Router = mux.NewRouter()
-	err := staticFile(Router)
-	if err != nil {
+	var err error
+	if err = staticFile(Router); err != nil {
 		return err
 	}
-	err = memeRouting(Router)
-	if err != nil {
+	if err = memeRouting(Router); err != nil {
 		return err
 	}
 	// routing
 	srv := &http.Server{
 		Handler:      handlers.LoggingHandler(os.Stdout, Router),
-		Addr:         Address + ":" + strconv.Itoa(Port),
+		Addr:         configuration.Address + ":" + strconv.Itoa(configuration.Port),
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
@@ -45,11 +45,13 @@ func configureRouter() error {
 
 func staticFile(router *mux.Router) error {
 	router.PathPrefix("/files/").Handler(http.StripPrefix("/files/",
-		http.FileServer(http.Dir(FilesAddress))))
+		http.FileServer(http.Dir(configuration.FilesAddress))))
 	return nil
 }
 
 func memeRouting(router *mux.Router) error {
 	router.Methods("GET").Path("/meme/top/day").HandlerFunc(view.TopDayMeme)
+	router.Methods("GET").Path("/meme/top/week").HandlerFunc(view.TopWeekMeme)
+	router.Methods("GET").Path("/meme/top/ever").HandlerFunc(view.TopEverMeme)
 	return nil
 }
