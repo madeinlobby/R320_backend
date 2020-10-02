@@ -29,10 +29,35 @@ func TopWeekMeme(writer http.ResponseWriter, request *http.Request) {
 	TopMeme(query, writer, request)
 }
 
+func TopMonthMeme(writer http.ResponseWriter, request *http.Request) {
+	query := func() (*[]database.Meme, error) {
+		pageSize, pageNumber := getPageInfo(request)
+		t := time.Now().Add(-30 * 7 * 24 * time.Hour)
+		return model.GetTopMeme(&t, pageNumber*pageSize)
+	}
+	TopMeme(query, writer, request)
+}
+
 func TopEverMeme(writer http.ResponseWriter, request *http.Request) {
 	query := func() (*[]database.Meme, error) {
 		pageSize, pageNumber := getPageInfo(request)
 		return model.GetEverTopMeme(pageNumber * pageSize)
+	}
+	TopMeme(query, writer, request)
+}
+
+func RandomMeme(writer http.ResponseWriter, request *http.Request) {
+	query := func() (*[]database.Meme, error) {
+		pageSize, pageNumber := getPageInfo(request)
+		return model.GetRandomMeme(pageNumber * pageSize)
+	}
+	TopMeme(query, writer, request)
+}
+
+func LastMeme(writer http.ResponseWriter, request *http.Request) {
+	query := func() (*[]database.Meme, error) {
+		pageSize, pageNumber := getPageInfo(request)
+		return model.GetLastMeme(pageNumber * pageSize)
 	}
 	TopMeme(query, writer, request)
 }
@@ -76,30 +101,31 @@ func getPageInfo(request *http.Request) (int, int) {
 	return pageSize, pageNumber
 }
 
-func processMeme(element *database.Meme) (*Meme, error) {
-	meme := Meme{
-		Title:    element.Title,
-		Id:       element.ID,
-		Username: element.UploaderUsername,
-		Picture:  element.ImageAddress,
-		Like:     element.Like,
+func processMeme(meme *database.Meme) (*Meme, error) {
+	result := Meme{
+		Title:    meme.Title,
+		Id:       meme.ID,
+		Username: meme.UploaderUsername,
+		Picture:  meme.ImageAddress,
+		Like:     meme.Like,
+		Date:     meme.UploadTime,
 	}
-	user, err := model.GetUser(element.UploaderUsername)
+	user, err := model.GetUser(meme.UploaderUsername)
 	if err != nil {
 		return nil, err
 	}
-	tags, err := model.GetTags(element.ID)
+	result.Avatar = user.Avatar
+	tags, err := model.GetTags(meme.ID)
 	if err != nil {
 		return nil, err
 	}
-	meme.UsernameAvatarUrl = user.Avatar
 	var stringTags []string
 	stringTags = append(stringTags)
 	for _, tag := range *tags {
 		stringTags = append(stringTags, tag.Name)
 	}
-	meme.Tag = stringTags
-	return &meme, nil
+	result.Tag = stringTags
+	return &result, nil
 }
 
 func writeError(err error, writer http.ResponseWriter) {

@@ -32,6 +32,9 @@ func configureRouter() error {
 	if err = memeRouting(Router); err != nil {
 		return err
 	}
+	if err = commentRouting(Router); err != nil {
+		return err
+	}
 	// routing
 	srv := &http.Server{
 		Handler:      handlers.LoggingHandler(os.Stdout, Router),
@@ -44,14 +47,21 @@ func configureRouter() error {
 }
 
 func staticFile(router *mux.Router) error {
-	router.PathPrefix("/files/").Handler(http.StripPrefix("/files/",
+	router.PathPrefix("/api/files/").Handler(http.StripPrefix("/api/files/",
 		http.FileServer(http.Dir(configuration.FilesAddress))))
 	return nil
 }
 
 func memeRouting(router *mux.Router) error {
-	router.Methods("GET").Path("/meme/top/day").HandlerFunc(view.TopDayMeme)
-	router.Methods("GET").Path("/meme/top/week").HandlerFunc(view.TopWeekMeme)
-	router.Methods("GET").Path("/meme/top/ever").HandlerFunc(view.TopEverMeme)
+	router.Methods("GET").Path("/api/meme/top/day").HandlerFunc(view.TopDayMeme)
+	router.Methods("GET").Path("/api/meme/top/week").HandlerFunc(view.TopWeekMeme)
+	router.Methods("GET").Path("/api/meme/top/month").HandlerFunc(view.TopMonthMeme)
+	router.Methods("GET").Path("/api/meme/top/ever").HandlerFunc(view.TopEverMeme)
+	router.Methods("GET").Path("/api/meme/random").HandlerFunc(view.RandomMeme)
+	router.Methods("GET").Path("/api/meme/last").HandlerFunc(view.LastMeme)
+	return nil
+}
+func commentRouting(router *mux.Router) error {
+	router.Methods("GET").Path("/api/meme/comment/{meme_id}").HandlerFunc(view.CommentByMemeID)
 	return nil
 }

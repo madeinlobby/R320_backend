@@ -22,12 +22,6 @@ type Meme struct {
 	Like             int
 	UploadTime       time.Time
 }
-
-type Tag struct {
-	MemeID int64
-	Name   string
-}
-
 type Comment struct {
 	ID          int64 `gorm:"primaryKey" gorm:"autoincrement"`
 	Username    string
@@ -35,4 +29,17 @@ type Comment struct {
 	Like        int
 	MemeId      int64
 	UpCommentID int64
+	PublishTime time.Time
+}
+type Tag struct {
+	MemeID int64
+	Name   string
+}
+type MemeLike struct {
+	MemeID int64
+	UserID int64
+}
+type CommentLike struct {
+	CommentID int64
+	UserId    int64
 }

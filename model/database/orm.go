@@ -12,7 +12,7 @@ func LunchDB() error {
 	if err != nil {
 		return err
 	}
-	err = DB.AutoMigrate(&User{}, &Meme{}, &Comment{}, &Tag{})
+	err = DB.AutoMigrate(&User{}, &Meme{}, &Comment{}, &Tag{}, &MemeLike{}, &CommentLike{})
 	if err != nil {
 		return err
 	}
